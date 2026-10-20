@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e8d6b3">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>تحدي المئة مليون</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+/* Layout: controls on top, a sticky savings strip, then a plywood lid panel holding the engraved grid of notes. */
+:root {
+  --bg: #e8d6b3;
+  --panel: #d9b987;
+  --grain: rgba(90, 55, 20, .10);
+  --ink: #3a2616;
+  --ink-soft: #6b4a2c;
+  --line: #7a5532;
+  --line-soft: rgba(122, 85, 50, .45);
+  --done: #3a2616;
+  --done-fg: #ead9b8;
+  --accent: #1f5c4a;
+  --accent-fg: #f3ead6;
+  --track: rgba(58, 38, 22, .16);
+  --display: 'Reem Kufi', 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+  --body: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1e1710; --panel: #2c2218; --grain: rgba(255, 220, 160, .06);
+    --ink: #e3c79b; --ink-soft: #b99a6d; --line: #8a6a44; --line-soft: rgba(138, 106, 68, .5);
+    --done: #e3c79b; --done-fg: #1e1710; --accent: #5fb596; --accent-fg: #11201a;
+    --track: rgba(227, 199, 155, .18); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1e1710; --panel: #2c2218; --grain: rgba(255, 220, 160, .06);
+  --ink: #e3c79b; --ink-soft: #b99a6d; --line: #8a6a44; --line-soft: rgba(138, 106, 68, .5);
+  --done: #e3c79b; --done-fg: #1e1710; --accent: #5fb596; --accent-fg: #11201a;
+  --track: rgba(227, 199, 155, .18); color-scheme: dark;
+}
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html, body { margin: 0; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+.cell, .chip, .btn { -webkit-user-select: none; user-select: none; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.6;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.num { unicode-bidi: isolate; direction: ltr; display: inline-block; font-variant-numeric: tabular-nums; }
+
+.eyebrow { margin: 0; font-size: 13px; letter-spacing: .04em; color: var(--ink-soft); }
+h1 { margin: 2px 0 4px; font: 700 clamp(32px, 9vw, 52px)/1.15 var(--display); text-wrap: balance; }
+.sub { margin: 0; color: var(--ink-soft); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip, .btn {
+  font: 500 15px var(--body); color: var(--ink); background: transparent; cursor: pointer;
+  border: 1.5px solid var(--line); border-radius: 4px; padding: 6px 14px; min-height: 38px;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.solid { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.danger { border-color: #b3402a; color: #b3402a; }
+:root[data-theme="dark"] .btn.danger { color: #ff9b85; border-color: #ff9b85; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.danger { color: #ff9b85; border-color: #ff9b85; } }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#cform { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+#cform label { font-weight: 500; }
+#amt { font: 500 16px var(--body); direction: ltr; width: 150px; min-height: 38px; padding: 4px 10px; color: var(--ink); background: transparent; border: 1.5px solid var(--line); border-radius: 4px; }
+.hint { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--ink-soft); }
+
+.strip {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  padding-block: 10px 12px; border-bottom: 1.5px solid var(--line);
+}
+.strip-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+.saved { font: 700 clamp(26px, 7vw, 38px)/1.1 var(--display); }
+.saved small { font: 500 14px var(--body); color: var(--ink-soft); margin-inline-start: 6px; }
+.meta { font-size: 14px; color: var(--ink-soft); }
+.bar { height: 8px; margin-top: 8px; background: var(--track); border-radius: 2px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
+
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+.tile { font: 400 13px var(--body); color: var(--ink-soft); text-align: start; cursor: pointer; background: transparent; border: 1.5px solid var(--line); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.tile .d { display: block; font: 700 19px/1.2 var(--display); color: var(--ink); }
+.tile .mini { display: block; height: 4px; margin-top: 6px; background: var(--track); border-radius: 2px; overflow: hidden; }
+.tile .mini i { display: block; height: 100%; width: 0; background: var(--accent); }
+.grid.focus .cell:not(.hl) { opacity: .25; }
+.remind { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; border: 1.5px solid var(--line); border-radius: 4px; padding: 10px 12px; }
+.remind label { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.remind input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+#rTime { font: 500 16px var(--body); direction: ltr; min-height: 38px; padding: 4px 10px; color: var(--ink); background: transparent; border: 1.5px solid var(--line); border-radius: 4px; }
+.remind .hint { margin: 0; flex-basis: 100%; font-size: 13px; color: var(--ink-soft); }
+
+.lid {
+  background: var(--panel);
+  background-image: repeating-linear-gradient(90deg, transparent 0 26px, var(--grain) 26px 27px);
+  border: 2px solid var(--line); border-radius: 6px; padding: 14px 12px 16px;
+}
+.slot { display: block; width: 64px; height: 8px; margin: 0 auto 12px; border-radius: 8px; background: var(--ink); opacity: .85; }
+.lid-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; margin-bottom: 10px; font: 700 20px var(--display); }
+.lid-head .num { font-family: var(--body); font-weight: 700; letter-spacing: .02em; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; }
+.cell {
+  min-width: 0; height: 28px; padding: 0; cursor: pointer;
+  font: 500 11px/1 var(--body); font-variant-numeric: tabular-nums; color: var(--ink);
+  background: transparent; border: 1.5px solid var(--line); border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
+.cell.big { font-weight: 700; }
+.cell.on { background: var(--done); color: var(--done-fg); border-color: var(--done); box-shadow: none; opacity: .72; }
+.cell:active { transform: scale(.94); }
+
+.foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.foot p { margin: 0; font-size: 13px; color: var(--ink-soft); flex: 1 1 220px; }
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } .cell:active { transform: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap" dir="rtl" lang="ar">
+  <header>
+    <p class="eyebrow">قالب ادخار للعلبة الخشبية</p>
+    <h1 id="h1">تحدي المئة مليون</h1>
+    <p class="sub"><span class="num" id="tAmt"></span> دج. المليون هنا بالسنتيم، أي 1 مليون = 10 000 دج.</p>
+  </header>
+
+  <section aria-label="اختيار التحدي">
+    <div class="chips" id="chips"></div>
+    <form id="cform" hidden>
+      <label for="amt">المبلغ بالدينار</label>
+      <input id="amt" type="number" inputmode="numeric" min="10000" max="5000000" step="50" value="1000000">
+      <button class="btn solid" type="submit">إنشاء القالب</button>
+      <p class="hint">من 10 000 إلى 5 000 000 دج، يُقرَّب لأقرب 50 دج.</p>
+    </form>
+  </section>
+
+  <section class="strip" aria-live="polite">
+    <div class="strip-row">
+      <div class="saved"><span class="num" id="saved">0</span><small>دج مدّخرة</small></div>
+      <div class="meta">المتبقي <span class="num" id="left"></span> دج · <span class="num" id="cnt"></span> خانة</div>
+    </div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="pbar"><i id="fill"></i></div>
+  </section>
+
+  <section class="legend" id="legend" aria-label="الأوراق المتبقية من كل فئة"></section>
+  <p class="hint" style="margin:-8px 0 0;font-size:13px;color:var(--ink-soft)">اضغط على فئة لإبراز خاناتها في اللوح.</p>
+
+  <section class="lid" aria-label="لوح التحدي">
+    <span class="slot" aria-hidden="true"></span>
+    <div class="lid-head"><span id="lt">تحدي المئة مليون</span><span class="num" id="lamt"></span></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="remind" id="remind" hidden aria-label="التذكير اليومي">
+    <label for="rOn"><input type="checkbox" id="rOn"> تذكير يومي بالادخار</label>
+    <input type="time" id="rTime" value="20:00" aria-label="وقت التذكير">
+    <p class="hint" id="rMsg" aria-live="polite"></p>
+  </section>
+
+  <div class="foot">
+    <p>اضغط على الخانة عند وضع الورقة في العلبة. تبقى خاناتك محفوظة عند فتح الصفحة لاحقاً.</p>
+    <button class="btn" id="reset" type="button">تصفير الخانات</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var DEN = [2000, 1000, 500, 200, 100, 50];
+  var SHARE = [0.70, 0.20, 0.08, 0.01, 0.008, 0.002];
+  var PRESETS = [[100, 1000000], [50, 500000], [20, 200000], [10, 100000], [5, 50000]];
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); };
+
+  function rng(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function counts(T) {
+    var c = DEN.map(function (d, i) { return Math.floor(T * SHARE[i] / d); });
+    var rem = T - c.reduce(function (s, n, i) { return s + n * DEN[i]; }, 0);
+    DEN.forEach(function (d, i) { var k = Math.floor(rem / d); c[i] += k; rem -= k * d; });
+    return c;
+  }
+  function layout(T) {
+    var c = counts(T), arr = [];
+    DEN.forEach(function (d, i) { for (var k = 0; k < c[i]; k++) arr.push(d); });
+    var r = rng(T);
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(r() * (i + 1)), t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  var T = 1000000, marks = new Set(), cells = layout(T), total = counts(T);
+  var store = { marks: {} }, ref = null, customOpen = false;
+  var grid = $('grid');
+
+  function nameOf(t) { var m = t / 10000; return t === 1000000 ? 'المئة مليون' : m + ' مليون'; }
+
+  function buildChips() {
+    var box = $('chips'); box.textContent = '';
+    var isPreset = PRESETS.some(function (p) { return p[1] === T; });
+    PRESETS.forEach(function (p) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = p[0] + ' مليون';
+      b.setAttribute('aria-pressed', String(p[1] === T && !customOpen));
+      b.addEventListener('click', function () { customOpen = false; $('cform').hidden = true; setTarget(p[1]); });
+      box.appendChild(b);
+    });
+    var o = document.createElement('button');
+    o.type = 'button'; o.className = 'chip'; o.textContent = 'مبلغ آخر';
+    o.setAttribute('aria-pressed', String(customOpen || !isPreset));
+    o.addEventListener('click', function () {
+      customOpen = !customOpen; $('cform').hidden = !customOpen; $('amt').value = T; buildChips();
+      if (customOpen) $('amt').focus();
+    });
+    box.appendChild(o);
+  }
+
+  function buildGrid() {
+    var frag = document.createDocumentFragment();
+    cells.forEach(function (d, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'cell' + (d >= 1000 ? ' big' : '') + (marks.has(i) ? ' on' : '');
+      b.dataset.i = i; b.dataset.d = d; b.textContent = d;
+      b.setAttribute('aria-pressed', String(marks.has(i)));
+      b.setAttribute('aria-label', d + ' دج');
+      frag.appendChild(b);
+    });
+    grid.textContent = ''; grid.appendChild(frag);
+    applyFocus();
+  }
+
+  var focusD = null;
+  function applyFocus() {
+    grid.classList.toggle('focus', focusD !== null);
+    grid.querySelectorAll('.cell').forEach(function (c) { c.classList.toggle('hl', +c.dataset.d === focusD); });
+    document.querySelectorAll('.tile').forEach(function (t) { t.setAttribute('aria-pressed', String(+t.dataset.d === focusD)); });
+  }
+  function buildLegend() {
+    var box = $('legend'); box.textContent = '';
+    DEN.forEach(function (d, i) {
+      var t = document.createElement('button');
+      t.type = 'button'; t.className = 'tile'; t.dataset.d = d; t.dataset.i = i;
+      t.innerHTML = '<span class="d num">' + d + '</span><span class="r"></span><span class="mini"><i></i></span>';
+      t.addEventListener('click', function () { focusD = focusD === d ? null : d; applyFocus(); });
+      box.appendChild(t);
+    });
+  }
+
+  function update() {
+    var saved = 0, used = DEN.map(function () { return 0; });
+    marks.forEach(function (i) { var d = cells[i]; saved += d; used[DEN.indexOf(d)]++; });
+    var pct = Math.round(saved / T * 1000) / 10;
+    $('saved').textContent = fmt(saved);
+    $('left').textContent = fmt(T - saved);
+    $('cnt').textContent = marks.size + ' / ' + cells.length;
+    $('fill').style.width = pct + '%';
+    $('pbar').setAttribute('aria-valuenow', pct);
+    document.querySelectorAll('.tile').forEach(function (t) {
+      var i = +t.dataset.i, left = total[i] - used[i];
+      t.querySelector('.r').textContent = 'باقي ' + left + ' من ' + total[i];
+      t.querySelector('i').style.width = (total[i] ? used[i] / total[i] * 100 : 0) + '%';
+    });
+  }
+
+  function head() {
+    var t = 'تحدي ' + nameOf(T);
+    $('h1').textContent = t; $('lt').textContent = t;
+    $('tAmt').textContent = fmt(T); $('lamt').textContent = fmt(T) + ' DA';
+    document.title = 'تحدي المئة مليون';
+  }
+
+  function setTarget(n, skipStash) {
+    if (!skipStash) store.marks[T] = Array.from(marks);
+    T = n; marks = new Set(store.marks[T] || []);
+    cells = layout(T); total = counts(T);
+    marks.forEach(function (i) { if (i >= cells.length) marks.delete(i); });
+    head(); buildChips(); buildGrid(); update();
+    if (!skipStash) queueSave();
+  }
+
+  grid.addEventListener('click', function (e) {
+    var b = e.target.closest('.cell'); if (!b) return;
+    var i = +b.dataset.i, on = !marks.has(i);
+    if (on) marks.add(i); else marks.delete(i);
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+    update(); queueSave();
+  });
+
+  $('cform').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = parseInt($('amt').value, 10);
+    if (!isFinite(v)) return;
+    v = Math.min(5000000, Math.max(10000, Math.round(v / 50) * 50));
+    $('amt').value = v; customOpen = true; setTarget(v);
+  });
+
+  var resetBtn = $('reset'), resetTimer;
+  function resetLabel() { resetBtn.textContent = 'تصفير الخانات'; resetBtn.classList.remove('danger'); resetBtn.dataset.armed = ''; }
+  resetBtn.addEventListener('click', function () {
+    if (!resetBtn.dataset.armed) {
+      resetBtn.textContent = 'اضغط للتأكيد'; resetBtn.classList.add('danger'); resetBtn.dataset.armed = '1';
+      clearTimeout(resetTimer); resetTimer = setTimeout(resetLabel, 4000); return;
+    }
+    clearTimeout(resetTimer); resetLabel();
+    marks = new Set(); buildGrid(); update(); queueSave();
+  });
+
+  var timer, busy = false, dirty = false;
+  function queueSave() { dirty = true; clearTimeout(timer); timer = setTimeout(flush, 600); }
+  async function flush() {
+    if (busy) return;
+    busy = true; dirty = false;
+    store.marks[T] = Array.from(marks);
+    var body = { active: T, marks: store.marks };
+    try { localStorage.setItem('dz-savings-box', JSON.stringify(body)); } catch (e) {}
+    if (ref) { try { await ref.set(body); } catch (e) {} }
+    busy = false;
+    if (dirty) flush();
+  }
+
+  function init() {
+    var saved = null;
+    try { var r = localStorage.getItem('dz-savings-box'); if (r) saved = JSON.parse(r); } catch (e) {}
+    if (saved && saved.marks) {
+      store.marks = saved.marks;
+      customOpen = false;
+      setTarget(saved.active || T, true);
+    }
+  }
+
+  var LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  var isNative = !!(LN && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  function rMsg(t) { $('rMsg').textContent = t; }
+  function loadReminder() {
+    if (!isNative) return;
+    $('remind').hidden = false;
+    try {
+      var r = JSON.parse(localStorage.getItem('dz-remind') || 'null');
+      if (r) { $('rOn').checked = !!r.on; $('rTime').value = r.t || '20:00'; if (r.on) rMsg('التذكير يعمل كل يوم عند ' + (r.t || '20:00')); }
+    } catch (e) {}
+  }
+  async function applyReminder() {
+    var on = $('rOn').checked, t = $('rTime').value || '20:00', p = t.split(':'), ok = false;
+    try {
+      await LN.cancel({ notifications: [{ id: 1 }] });
+      if (!on) { rMsg('تم إيقاف التذكير.'); }
+      else {
+        var perm = await LN.requestPermissions();
+        if (perm.display !== 'granted') { $('rOn').checked = false; on = false; rMsg('لم يُسمح بالإشعارات. فعّلها من إعدادات الهاتف ثم أعد المحاولة.'); }
+        else {
+          await LN.schedule({ notifications: [{ id: 1, title: 'تحدي المئة مليون', body: 'هل وضعت ورقتك اليوم؟ افتح التطبيق وعلّم خانتك.', schedule: { on: { hour: +p[0], minute: +p[1] }, allowWhileIdle: true } }] });
+          rMsg('سيصلك التذكير كل يوم عند ' + t + '.');
+        }
+      }
+      ok = true;
+    } catch (e) { $('rOn').checked = false; on = false; rMsg('تعذّر ضبط التذكير. حاول مرة أخرى.'); }
+    try { localStorage.setItem('dz-remind', JSON.stringify({ on: on, t: t })); } catch (e) {}
+  }
+  $('rOn').addEventListener('change', applyReminder);
+  $('rTime').addEventListener('change', function () { if ($('rOn').checked) applyReminder(); });
+
+  buildLegend(); head(); buildChips(); buildGrid(); update();
+  loadReminder();
+  init();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
+</script>
+</body>
+</html>
