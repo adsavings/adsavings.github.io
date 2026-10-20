@@ -133,6 +133,14 @@ h1 { margin: 2px 0 4px; font: 700 clamp(32px, 9vw, 52px)/1.15 var(--display); te
 .confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 20; }
 .confetti i { position: absolute; top: -16px; width: 8px; height: 14px; border-radius: 2px; animation: fall linear forwards; }
 @keyframes fall { to { transform: translate(var(--dx), 110vh) rotate(540deg); } }
+.bulk { display: flex; flex-direction: column; gap: 10px; border: 1.5px solid var(--line); border-radius: 4px; padding: 12px; }
+.bulk h2 { margin: 0; font: 700 20px var(--display); }
+.bulk .scope, .bulk .msg { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.bulk .msg { font-size: 14px; color: var(--ink); min-height: 1.6em; }
+.bulk .chip { min-width: 54px; }
+.bulk .chip.all { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.bulk form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#bn { font: 500 16px var(--body); direction: ltr; width: 110px; min-height: 38px; padding: 4px 10px; color: var(--ink); background: transparent; border: 1.5px solid var(--line); border-radius: 4px; }
 .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .foot p { margin: 0; font-size: 13px; color: var(--ink-soft); flex: 1 1 220px; }
 @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } .cell:active { transform: none; } }
@@ -173,6 +181,19 @@ h1 { margin: 2px 0 4px; font: 700 clamp(32px, 9vw, 52px)/1.15 var(--display); te
 
   <section class="legend" id="legend" aria-label="الأوراق المتبقية من كل فئة"></section>
   <p class="hint" style="margin:-8px 0 0;font-size:13px;color:var(--ink-soft)">اضغط على فئة لإبراز خاناتها في اللوح.</p>
+
+  <section class="bulk" aria-label="تعليم سريع">
+    <h2>تعليم سريع</h2>
+    <p class="scope" id="bScope"></p>
+    <div class="chips" id="bChips"></div>
+    <form id="bform">
+      <label for="bn">عدد آخر</label>
+      <input id="bn" type="number" inputmode="numeric" min="1" step="1" placeholder="مثلاً 37">
+      <button class="btn solid" type="submit">علّم</button>
+      <button class="btn" type="button" id="undo" hidden>تراجع</button>
+    </form>
+    <p class="msg" id="bMsg" aria-live="polite"></p>
+  </section>
 
   <section class="lid" aria-label="لوح التحدي">
     <span class="slot" aria-hidden="true"></span>
@@ -270,6 +291,8 @@ h1 { margin: 2px 0 4px; font: 700 clamp(32px, 9vw, 52px)/1.15 var(--display); te
     grid.classList.toggle('focus', focusD !== null);
     grid.querySelectorAll('.cell').forEach(function (c) { c.classList.toggle('hl', +c.dataset.d === focusD); });
     document.querySelectorAll('.tile').forEach(function (t) { t.setAttribute('aria-pressed', String(+t.dataset.d === focusD)); });
+    var sc = $('bScope');
+    if (sc) sc.textContent = focusD === null ? 'يشمل التعليم كل الفئات. اختر فئة من البطاقات أعلاه لحصره فيها.' : 'يشمل التعليم فئة ' + focusD + ' دج فقط.';
   }
   function buildLegend() {
     var box = $('legend'); box.textContent = '';
@@ -320,6 +343,55 @@ h1 { margin: 2px 0 4px; font: 700 clamp(32px, 9vw, 52px)/1.15 var(--display); te
     setTimeout(function () { box.remove(); }, 4200);
   }
 
+  var lastBulk = [];
+  function bMsg(t) { $('bMsg').textContent = t; }
+  function bulk(n) {
+    var added = [], sum = 0;
+    for (var i = 0; i < cells.length && added.length < n; i++) {
+      if (marks.has(i)) continue;
+      if (focusD !== null && cells[i] !== focusD) continue;
+      added.push(i);
+    }
+    if (!added.length) { bMsg(focusD !== null ? 'كل خانات فئة ' + focusD + ' معلّمة بالفعل.' : 'كل الخانات معلّمة بالفعل.'); return; }
+    var wasDone = marks.size === cells.length;
+    added.forEach(function (i) {
+      marks.add(i); sum += cells[i];
+      var b = grid.children[i];
+      if (b) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); }
+    });
+    lastBulk = added; $('undo').hidden = false;
+    update(); queueSave();
+    bMsg('تم تعليم ' + added.length + ' خانة بقيمة ' + fmt(sum) + ' دج' + (n !== Infinity && added.length < n ? ' (هذا كل ما بقي' + (focusD !== null ? ' في هذه الفئة' : '') + ')' : '') + '.');
+    if (!wasDone && marks.size === cells.length) burst();
+  }
+  function buildBulkChips() {
+    var box = $('bChips');
+    [5, 10, 25, 50, 100].forEach(function (n) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = n;
+      b.addEventListener('click', function () { bulk(n); });
+      box.appendChild(b);
+    });
+    var all = document.createElement('button');
+    all.type = 'button'; all.className = 'chip all'; all.textContent = 'تحديد الكل';
+    all.addEventListener('click', function () { bulk(Infinity); });
+    box.appendChild(all);
+  }
+  $('bform').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = parseInt($('bn').value, 10);
+    if (!(v > 0)) { bMsg('اكتب عدداً أكبر من صفر.'); return; }
+    bulk(v); $('bn').value = '';
+  });
+  $('undo').addEventListener('click', function () {
+    var n = 0;
+    lastBulk.forEach(function (i) {
+      if (marks.delete(i)) { n++; var b = grid.children[i]; if (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); } }
+    });
+    lastBulk = []; $('undo').hidden = true;
+    update(); queueSave(); bMsg('تم التراجع عن ' + n + ' خانة.');
+  });
+
   function head() {
     var t = 'تحدي ' + nameOf(T);
     $('h1').textContent = t; $('lt').textContent = t;
@@ -332,6 +404,7 @@ h1 { margin: 2px 0 4px; font: 700 clamp(32px, 9vw, 52px)/1.15 var(--display); te
     T = n; marks = new Set(store.marks[T] || []);
     cells = layout(T); total = counts(T);
     marks.forEach(function (i) { if (i >= cells.length) marks.delete(i); });
+    lastBulk = []; $('undo').hidden = true; bMsg('');
     head(); buildChips(); buildGrid(); update();
     if (!skipStash) queueSave();
   }
@@ -363,7 +436,7 @@ h1 { margin: 2px 0 4px; font: 700 clamp(32px, 9vw, 52px)/1.15 var(--display); te
       clearTimeout(resetTimer); resetTimer = setTimeout(resetLabel, 4000); return;
     }
     clearTimeout(resetTimer); resetLabel();
-    marks = new Set(); buildGrid(); update(); queueSave();
+    marks = new Set(); lastBulk = []; $('undo').hidden = true; buildGrid(); update(); queueSave();
   });
 
   var timer, busy = false, dirty = false;
@@ -420,7 +493,7 @@ h1 { margin: 2px 0 4px; font: 700 clamp(32px, 9vw, 52px)/1.15 var(--display); te
   $('rOn').addEventListener('change', applyReminder);
   $('rTime').addEventListener('change', function () { if ($('rOn').checked) applyReminder(); });
 
-  buildLegend(); head(); buildChips(); buildGrid(); update();
+  buildBulkChips(); buildLegend(); head(); buildChips(); buildGrid(); update();
   loadReminder();
   init();
 })();
